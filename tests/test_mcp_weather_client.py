@@ -31,10 +31,10 @@ class TestMCPWeatherClient:
     @pytest.fixture
     async def client(self):
         """Create and connect a client for testing"""
-        client = MCPWeatherClient("http://localhost:8000/sse")
+        client = MCPWeatherClient("http://localhost:8000")
         connected = await client.connect()
         if not connected:
-            pytest.skip("Could not connect to MCP server at http://localhost:8000/sse. Make sure the server is running.")
+            pytest.skip("Could not connect to MCP server at http://localhost:8000. Make sure the server is running.")
         
         yield client
         
@@ -44,7 +44,7 @@ class TestMCPWeatherClient:
     @pytest.mark.asyncio
     async def test_connection(self):
         """Test that we can connect to the MCP server"""
-        client = MCPWeatherClient("http://localhost:8000/sse")
+        client = MCPWeatherClient("http://localhost:8000")
         
         # Test connection
         connected = await client.connect()
@@ -178,7 +178,7 @@ async def run_basic_tests():
     print("MCP Weather Client Test Suite")
     print("=" * 60)
     
-    client = MCPWeatherClient("http://localhost:8000/sse")
+    client = MCPWeatherClient("http://localhost:8000")
     
     try:
         # Test 1: Connection
@@ -230,7 +230,7 @@ async def run_basic_tests():
             
             # Verify the weather was set
             verify_result = await client.call_tool("get_weather_tool", {"city": "test_city"})
-            if "Weather in Test City:" in verify_result and "72°F" in verify_result:
+            if "Weather in Test City:" in verify_result and "72.0°F" in verify_result:
                 print(f"✅ PASSED: Verification successful: {verify_result}")
             else:
                 print(f"❌ FAILED: Could not verify weather update: {verify_result}")

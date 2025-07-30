@@ -18,12 +18,47 @@ import os
 from pathlib import Path
 
 def check_server_running():
-    """Check if the MCP server is running on localhost:8000"""
+    """Check if the MCP server is running on localhost:8000 by connecting to SSE endpoint"""
     import httpx
+    import asyncio
+    
+    async def _check_sse_endpoint():
+        """Async function to check SSE endpoint"""
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                # Make a streaming request to the SSE endpoint
+                async with client.stream('GET', 'http://localhost:8000/sse') as response:
+                    # Check if we get a 200 response
+                    if response.status_code != 200:
+                        print("Status code: " + str(response.status_code))
+                        return False
+                    
+                    # Check if response has SSE headers
+                    content_type = response.headers.get('content-type', '')
+                    if 'text/event-stream' not in content_type:
+                        print("Content type: " + content_type)
+                        return False
+                    
+                    print("waiting for data...")
+                    # Try to read a small amount of data to confirm SSE format
+                    async for chunk in response.aiter_bytes(chunk_size=1):
+                        print("data received: " + str(chunk))
+                        # If we get any data, the SSE endpoint is working
+                        # We don't need to parse the full MCP protocol, just confirm SSE is active
+                        if chunk:
+                            return True
+                        break
+                    
+                    return True  # Connection successful even if no immediate data
+                    
+        except Exception as e:
+            print(e)
+            return False
+    
     try:
-        response = httpx.get("http://localhost:8000/sse", timeout=2.0)
-        return True
-    except:
+        # Run the async check
+        return asyncio.run(_check_sse_endpoint())
+    except Exception:
         return False
 
 def print_help():
