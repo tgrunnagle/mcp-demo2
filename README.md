@@ -103,41 +103,6 @@ python mcp_weather_client.py interactive
 - `weather_report(city)` - Generate weather report prompt for a city
 - `weather_summary()` - Generate summary prompt for all weather data
 
-## Example Usage
-
-### Using the Client Library
-```python
-import asyncio
-from mcp_sse_client import WeatherMCPClient
-
-async def main():
-    client = WeatherMCPClient()
-    await client.connect()
-    
-    # Get weather
-    weather = await client.call_tool("get_weather", {"city": "london"})
-    print(weather)
-    
-    # List tools
-    tools = await client.list_tools()
-    for tool in tools:
-        print(f"{tool['name']}: {tool['description']}")
-    
-    await client.disconnect()
-
-asyncio.run(main())
-```
-
-### Direct HTTP Access
-```bash
-# Health check
-curl http://localhost:8000/health
-
-# Server info
-curl http://localhost:8000/
-
-# SSE endpoint (will stream MCP messages)
-curl -N http://localhost:8000/sse
 ```
 
 ## Architecture

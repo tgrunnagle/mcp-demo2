@@ -10,6 +10,7 @@ This module implements a LangChain agent that:
 import asyncio
 import logging
 from typing import List, Optional
+import json
 
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
@@ -93,7 +94,7 @@ class MCPLangChainHost:
             else:
                 logger.info(f"Discovered {len(self.tools)} MCP tools:")
                 for tool in self.tools:
-                    logger.info(f"  - {tool.name}: {tool.description}")
+                    logger.info(f"  - {tool.name}: {tool.description}; input_schema: {json.dumps(tool.get_input_jsonschema(), indent=2)}")
             
             # Create the agent
             await self._create_agent()

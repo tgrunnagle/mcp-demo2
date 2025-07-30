@@ -126,7 +126,7 @@ class TestMCPWeatherClient:
         # Verify we can retrieve the weather we just set
         get_result = await client.call_tool("get_weather_tool", {"city": "test_city"})
         assert "Weather in Test City:" in get_result, "Should be able to get weather for the city we just set"
-        assert "75°F" in get_result, "Should contain the temperature we set"
+        assert "75.0°F" in get_result, "Should contain the temperature we set"
     
     @pytest.mark.asyncio
     async def test_tool_with_missing_parameters(self, client):

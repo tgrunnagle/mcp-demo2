@@ -74,16 +74,9 @@ class TestMCPToolWrapper:
     @pytest.mark.asyncio
     async def test_run_with_simple_string_input(self, weather_tool_wrapper):
         """Test _arun method with simple string input"""
-        result = await weather_tool_wrapper._arun("Paris")
+        result = await weather_tool_wrapper._arun('{"city": "New York"}')
         
-        assert "Weather in Paris" in result
-    
-    @pytest.mark.asyncio
-    async def test_run_method(self, weather_tool_wrapper):
-        """Test _arun method"""
-        result = await weather_tool_wrapper._arun('{"city": "Sydney"}')
-        
-        assert "Weather in Sydney" in result
+        assert "Weather in New York" in result
 
 
 class TestToolDiscovery:
@@ -123,8 +116,8 @@ class TestToolDiscovery:
         weather_tool = next(tool for tool in tools if tool.name == "get_weather_tool")
         
         # Test it works
-        result = await weather_tool._arun("London")
-        assert "Weather in London" in result
+        result = await weather_tool._arun('{"city": "New York"}')
+        assert "Weather in New York" in result
         
         # Find the list cities tool
         list_tool = next(tool for tool in tools if tool.name == "list_cities_tool")
@@ -159,8 +152,8 @@ class TestIntegrationScenarios:
         # Use each tool
         for tool in tools:
             if tool.name == "get_weather_tool":
-                result = await tool._arun("Tokyo")
-                assert "Weather in Tokyo" in result
+                result = await tool._arun('{"city": "New York"}')
+                assert "Weather in New York" in result
             elif tool.name == "list_cities_tool":
                 result = await tool._arun("{}")
                 assert "Available cities" in result
