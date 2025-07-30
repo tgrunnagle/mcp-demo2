@@ -301,7 +301,7 @@ async def sse_endpoint(request: Request):
 if __name__ == "__main__":
     # Run the server
     uvicorn.run(
-        "mcp_sse_server:app",
+        "mcp_weather_server:app",
         host="0.0.0.0",
         port=8000,
         reload=True,

@@ -24,12 +24,12 @@ The server will start on http://localhost:8000 with the following endpoints:
 
 1. In another terminal (with the same virtual environment), run the demo client:
 ```bash
-python mcp_sse_client.py
+python mcp_weather_client.py
 ```
 
 2. Or run the interactive client:
 ```bash
-python mcp_sse_client.py interactive
+python mcp_weather_client.py interactive
 ```
 
 ## API Endpoints

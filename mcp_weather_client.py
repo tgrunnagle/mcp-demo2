@@ -6,39 +6,36 @@ import json
 import logging
 from typing import Dict, Any, List
 
-from mcp.client import Client
-from mcp.client.sse import SseClientTransport
+from mcp import ClientSession
+from mcp.client.sse import sse_client
 from mcp.types import CallToolRequest, ListToolsRequest, GetPromptRequest, ListPromptsRequest
+
+from mcp_base_client import MCPBaseClient
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class WeatherMCPClient:
+class MCPWeatherClient(MCPBaseClient):
     """Example MCP Client that connects to the weather server via SSE"""
     
     def __init__(self, server_url: str = "http://localhost:8000"):
         self.server_url = server_url
         self.sse_url = f"{server_url}/sse"
-        self.client = None
-        self.transport = None
+        self.session = None
+        self.sse_transport = None
     
     async def connect(self):
         """Connect to the MCP server via SSE"""
         try:
             logger.info(f"Connecting to MCP server at {self.sse_url}")
             
-            # Create SSE transport
-            self.transport = SseClientTransport(self.sse_url)
-            
-            # Create MCP client
-            self.client = Client()
-            
-            # Connect to the server
-            await self.client.connect(self.transport)
+            # Create SSE transport and session
+            self.sse_transport = await sse_client(self.sse_url)
+            self.session = ClientSession(self.sse_transport[0], self.sse_transport[1])
             
             # Initialize the session
-            init_result = await self.client.initialize()
+            init_result = await self.session.initialize()
             logger.info(f"Connected to server: {init_result.serverInfo.name} v{init_result.serverInfo.version}")
             
             return True
@@ -49,16 +46,16 @@ class WeatherMCPClient:
     
     async def disconnect(self):
         """Disconnect from the MCP server"""
-        if self.client:
-            await self.client.close()
-        if self.transport:
-            await self.transport.close()
+        if self.session:
+            await self.session.close()
+        if self.sse_transport:
+            await self.sse_transport[0].close()
         logger.info("Disconnected from MCP server")
     
     async def list_tools(self) -> List[Dict[str, Any]]:
         """List available tools from the server"""
         try:
-            result = await self.client.list_tools()
+            result = await self.session.list_tools()
             tools = []
             for tool in result.tools:
                 tools.append({
@@ -74,7 +71,7 @@ class WeatherMCPClient:
     async def call_tool(self, name: str, arguments: Dict[str, Any]) -> str:
         """Call a tool on the server"""
         try:
-            result = await self.client.call_tool(name, arguments)
+            result = await self.session.call_tool(name, arguments)
             
             # Extract text content from the result
             if result.content:
@@ -93,7 +90,7 @@ class WeatherMCPClient:
     async def list_prompts(self) -> List[Dict[str, Any]]:
         """List available prompts from the server"""
         try:
-            result = await self.client.list_prompts()
+            result = await self.session.list_prompts()
             prompts = []
             for prompt in result.prompts:
                 prompt_dict = {
@@ -120,7 +117,7 @@ class WeatherMCPClient:
             if arguments is None:
                 arguments = {}
             
-            result = await self.client.get_prompt(name, arguments)
+            result = await self.session.get_prompt(name, arguments)
             
             # Extract messages from the prompt result
             if result.messages:
@@ -138,7 +135,7 @@ class WeatherMCPClient:
 
 async def demo_client():
     """Demonstrate the MCP client functionality"""
-    client = WeatherMCPClient()
+    client = MCPWeatherClient()
     
     # Connect to server
     if not await client.connect():
@@ -212,7 +209,7 @@ async def demo_client():
 
 async def interactive_client():
     """Interactive client for testing"""
-    client = WeatherMCPClient()
+    client = MCPWeatherClient()
     
     if not await client.connect():
         return
