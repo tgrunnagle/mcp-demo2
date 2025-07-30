@@ -15,7 +15,9 @@ import uvicorn
 
 from mcp.server import Server
 from mcp.server.models import InitializationOptions
-from mcp.server.sse import SseServerTransport
+from mcp.server.fastmcp import FastMCP
+from starlette.applications import Starlette
+from starlette.routing import Mount
 from mcp.types import (
     CallToolRequest,
     CallToolResult,
@@ -35,7 +37,7 @@ from mcp.types import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class WeatherMCPServer:
+class MCPWeatherServer:
     """Example MCP Server that provides weather-related tools and prompts"""
     
     def __init__(self):
@@ -207,7 +209,7 @@ class WeatherMCPServer:
                 raise ValueError(f"Unknown prompt: {name}")
 
 # Global server instance
-weather_server = WeatherMCPServer()
+weather_server = MCPWeatherServer()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -255,55 +257,34 @@ async def health_check():
         "cities_available": len(weather_server.weather_data)
     }
 
-@app.get("/sse")
-async def sse_endpoint(request: Request):
-    """SSE endpoint for MCP communication"""
-    logger.info("New SSE connection established")
-    
-    async def event_generator():
-        """Generate SSE events"""
-        try:
-            # Create SSE transport
-            transport = SseServerTransport()
-            
-            # Initialize the transport with the request
-            await transport.connect(request)
-            
-            # Run the MCP server with SSE transport
-            async with weather_server.server.run_server(
-                transport,
-                InitializationOptions(
-                    server_name="weather-server",
-                    server_version="1.0.0"
-                )
-            ) as server_session:
-                # Keep the connection alive and handle messages
-                async for message in transport:
-                    if message:
-                        yield f"data: {json.dumps(message)}\n\n"
-                        
-        except asyncio.CancelledError:
-            logger.info("SSE connection cancelled")
-        except Exception as e:
-            logger.error(f"Error in SSE endpoint: {e}")
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-    
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"  # Disable nginx buffering
-        }
-    )
+# Create FastMCP server instance
+mcp_server = FastMCP("weather-server")
+
+# Register tools with FastMCP server
+@mcp_server.tool()
+def get_weather(city: str) -> str:
+    """Get current weather for a city"""
+    return weather_server.get_weather(city)
+
+@mcp_server.tool()
+def set_weather(city: str, temperature: float, condition: str) -> str:
+    """Set weather for a city"""
+    return weather_server.set_weather(city, temperature, condition)
+
+@mcp_server.tool()
+def list_cities() -> list[str]:
+    """List all available cities"""
+    return weather_server.list_cities()
+
+# Create main ASGI application with both FastAPI and MCP server
+main_app = Starlette(
+    routes=[
+        Mount("/api", app=app),  # Mount FastAPI app under /api
+        Mount("/sse", app=mcp_server.sse_app()),  # Mount MCP SSE server under /sse
+    ]
+)
 
 if __name__ == "__main__":
-    # Run the server
-    uvicorn.run(
-        "mcp_weather_server:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    # Run the server with main_app that includes both FastAPI and MCP SSE server
+    import uvicorn
+    uvicorn.run(main_app, host="0.0.0.0", port=8000, reload=True, log_level="info")

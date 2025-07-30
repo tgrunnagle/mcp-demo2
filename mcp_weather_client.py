@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 from typing import Dict, Any, List
+from contextlib import AsyncExitStack
 
 from mcp import ClientSession
 from mcp.client.sse import sse_client
@@ -23,16 +24,21 @@ class MCPWeatherClient(MCPBaseClient):
         self.server_url = server_url
         self.sse_url = f"{server_url}/sse"
         self.session = None
-        self.sse_transport = None
+        self.exit_stack = AsyncExitStack()
     
     async def connect(self):
         """Connect to the MCP server via SSE"""
         try:
             logger.info(f"Connecting to MCP server at {self.sse_url}")
             
-            # Create SSE transport and session
-            self.sse_transport = await sse_client(self.sse_url)
-            self.session = ClientSession(self.sse_transport[0], self.sse_transport[1])
+            # Create SSE transport using async context manager
+            sse_transport = await self.exit_stack.enter_async_context(sse_client(self.sse_url))
+            read_stream, write_stream = sse_transport
+            
+            # Create session using async context manager
+            self.session = await self.exit_stack.enter_async_context(
+                ClientSession(read_stream, write_stream)
+            )
             
             # Initialize the session
             init_result = await self.session.initialize()
@@ -46,11 +52,12 @@ class MCPWeatherClient(MCPBaseClient):
     
     async def disconnect(self):
         """Disconnect from the MCP server"""
-        if self.session:
-            await self.session.close()
-        if self.sse_transport:
-            await self.sse_transport[0].close()
-        logger.info("Disconnected from MCP server")
+        try:
+            await self.exit_stack.aclose()
+            self.session = None
+            logger.info("Disconnected from MCP server")
+        except Exception as e:
+            logger.error(f"Error during disconnect: {e}")
     
     async def list_tools(self) -> List[Dict[str, Any]]:
         """List available tools from the server"""
