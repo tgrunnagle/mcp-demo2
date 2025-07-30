@@ -68,7 +68,6 @@ MCP Weather Demo Test Runner
 
 Usage:
     python run_tests.py              # Run basic tests without pytest
-    python run_tests.py --pytest     # Run full pytest suite  
     python run_tests.py --help       # Show this help
 
 Prerequisites:
@@ -80,22 +79,7 @@ Prerequisites:
 
 3. Run the tests:
    python run_tests.py
-
-Test Coverage:
-- MCP client connection to server
-- Tool discovery and listing
-- Weather tool functionality (get, set, list cities)
-- Error handling for invalid inputs
-- Multiple operation sequences
 """)
-
-async def run_basic_tests():
-    """Run the basic test suite without pytest"""
-    # Import the test module
-    sys.path.insert(0, str(Path(__file__).parent))
-    from tests.test_mcp_weather_client import run_basic_tests
-    
-    await run_basic_tests()
 
 def run_pytest_tests():
     """Run the full pytest suite"""
@@ -139,25 +123,12 @@ def main():
     
     print("✅ MCP server is running")
     
-    if "--pytest" in sys.argv:
-        # Run pytest suite
-        success = run_pytest_tests()
-        if success:
-            print("\n✅ All pytest tests passed!")
-        else:
-            print("\n❌ Some pytest tests failed.")
+    # Run pytest suite
+    success = run_pytest_tests()
+    if success:
+        print("\n✅ All pytest tests passed!")
     else:
-        # Run basic tests
-        print("\nRunning basic test suite...")
-        print("(Use --pytest for full test suite)")
-        print()
-        
-        try:
-            asyncio.run(run_basic_tests())
-        except KeyboardInterrupt:
-            print("\n\nTests interrupted by user.")
-        except Exception as e:
-            print(f"\n❌ ERROR: Tests failed with exception: {e}")
+        print("\n❌ Some pytest tests failed.")
 
 if __name__ == "__main__":
     main()
