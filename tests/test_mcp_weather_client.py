@@ -22,7 +22,7 @@ from typing import List, Dict, Any
 # Add the parent directory to the path so we can import our modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from mcp_weather_client import MCPWeatherClient
+from mcp_client import MCPClient
 
 
 class TestMCPWeatherClient:
@@ -31,7 +31,7 @@ class TestMCPWeatherClient:
     @pytest.fixture
     async def client(self):
         """Create and connect a client for testing"""
-        client = MCPWeatherClient("http://localhost:8000")
+        client = MCPClient("http://localhost:8000")
         connected = await client.connect()
         if not connected:
             pytest.skip("Could not connect to MCP server at http://localhost:8000. Make sure the server is running.")
@@ -44,7 +44,7 @@ class TestMCPWeatherClient:
     @pytest.mark.asyncio
     async def test_connection(self):
         """Test that we can connect to the MCP server"""
-        client = MCPWeatherClient("http://localhost:8000")
+        client = MCPClient("http://localhost:8000")
         
         # Test connection
         connected = await client.connect()
@@ -79,7 +79,7 @@ class TestMCPWeatherClient:
     @pytest.mark.asyncio
     async def test_list_cities_tool(self, client):
         """Test the list_cities_tool"""
-        result = await client.call_tool("list_cities_tool", {})
+        result = await client.call_tool("list_cities_tool")
         
         assert isinstance(result, str), "list_cities_tool should return a string"
         assert "Available cities:" in result, "Result should contain 'Available cities:'"
@@ -92,7 +92,7 @@ class TestMCPWeatherClient:
     @pytest.mark.asyncio
     async def test_get_weather_tool_valid_city(self, client):
         """Test getting weather for a valid city"""
-        result = await client.call_tool("get_weather_tool", {"city": "new_york"})
+        result = await client.call_tool("get_weather_tool", city="new_york")
         
         assert isinstance(result, str), "get_weather_tool should return a string"
         assert "Weather in New York:" in result, "Result should contain weather information for New York"
@@ -102,7 +102,7 @@ class TestMCPWeatherClient:
     @pytest.mark.asyncio
     async def test_get_weather_tool_invalid_city(self, client):
         """Test getting weather for an invalid city"""
-        result = await client.call_tool("get_weather_tool", {"city": "nonexistent_city"})
+        result = await client.call_tool("get_weather_tool", city="nonexistent_city")
         
         assert isinstance(result, str), "get_weather_tool should return a string"
         assert "Weather data not available" in result, "Should indicate data not available"
@@ -112,11 +112,11 @@ class TestMCPWeatherClient:
     async def test_set_weather_tool(self, client):
         """Test setting weather for a city"""
         # Set weather for a new city
-        result = await client.call_tool("set_weather_tool", {
-            "city": "test_city",
-            "temperature": 75.0,
-            "condition": "sunny"
-        })
+        result = await client.call_tool("set_weather_tool", 
+            city="test_city",
+            temperature=75.0,
+            condition="sunny"
+        )
         
         assert isinstance(result, str), "set_weather_tool should return a string"
         assert "Weather updated for Test City:" in result, "Should confirm weather update"
@@ -124,7 +124,7 @@ class TestMCPWeatherClient:
         assert "sunny" in result, "Should contain the condition"
         
         # Verify we can retrieve the weather we just set
-        get_result = await client.call_tool("get_weather_tool", {"city": "test_city"})
+        get_result = await client.call_tool("get_weather_tool", city="test_city")
         assert "Weather in Test City:" in get_result, "Should be able to get weather for the city we just set"
         assert "75.0°F" in get_result, "Should contain the temperature we set"
     
@@ -132,7 +132,7 @@ class TestMCPWeatherClient:
     async def test_tool_with_missing_parameters(self, client):
         """Test calling a tool with missing required parameters"""
         # This should handle the error gracefully
-        result = await client.call_tool("get_weather_tool", {})
+        result = await client.call_tool("get_weather_tool")
         
         # The result should indicate an error or handle missing parameters
         assert isinstance(result, str), "Should return a string even with missing parameters"
@@ -141,7 +141,7 @@ class TestMCPWeatherClient:
     @pytest.mark.asyncio
     async def test_nonexistent_tool(self, client):
         """Test calling a tool that doesn't exist"""
-        result = await client.call_tool("nonexistent_tool", {})
+        result = await client.call_tool("nonexistent_tool")
         
         # Should handle unknown tools gracefully
         assert isinstance(result, str), "Should return a string for unknown tools"
@@ -154,19 +154,19 @@ class TestMCPWeatherClient:
         assert len(tools) > 0, "Should have tools available"
         
         # List cities
-        cities_result = await client.call_tool("list_cities_tool", {})
+        cities_result = await client.call_tool("list_cities_tool")
         assert "Available cities:" in cities_result, "Should list cities"
         
         # Get weather for multiple cities
         for city in ["new_york", "london", "tokyo"]:
-            weather_result = await client.call_tool("get_weather_tool", {"city": city})
+            weather_result = await client.call_tool("get_weather_tool", city=city)
             assert f"Weather in {city.replace('_', ' ').title()}:" in weather_result, f"Should get weather for {city}"
         
         # Set weather for a new city
-        set_result = await client.call_tool("set_weather_tool", {
-            "city": "test_multiple",
-            "temperature": 68.0,
-            "condition": "cloudy"
-        })
+        set_result = await client.call_tool("set_weather_tool", 
+            city="test_multiple",
+            temperature=68.0,
+            condition="cloudy"
+        )
         assert "Weather updated" in set_result, "Should update weather successfully"
 

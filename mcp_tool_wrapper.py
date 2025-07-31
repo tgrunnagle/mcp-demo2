@@ -5,14 +5,13 @@ This module provides a wrapper that allows MCP tools to be used as LangChain too
 """
 
 import asyncio
-import json
 from typing import Any, Dict, List, Optional, Type
 from pydantic import BaseModel, Field, create_model
 from langchain_core.tools import BaseTool
 from langchain_core.callbacks import CallbackManagerForToolRun
 from typing import override
-from mcp_base_client import MCPBaseClient
 import logging
+from mcp_client import MCPClient
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ class MCPToolWrapper(BaseTool):
     
     name: str = Field(..., description="Name of the MCP tool")
     description: str = Field(..., description="Description of the MCP tool")
-    mcp_client: MCPBaseClient = Field(..., description="MCP client instance")
+    mcp_client: MCPClient = Field(..., description="MCP client instance")
 
     def __init__(self, tool_config: Dict[str, Any], **kwargs):
         args_schema = self._get_tool_base_model(tool_config)
@@ -104,7 +103,7 @@ class MCPToolWrapper(BaseTool):
         except Exception as e:
             return f"Error calling MCP tool {self.name}: {str(e)}"
 
-async def discover_mcp_tools(mcp_client: MCPBaseClient) -> List[MCPToolWrapper]:
+async def discover_mcp_tools(mcp_client: MCPClient) -> List[MCPToolWrapper]:
     """
     Discover available tools from an MCP client and return them as LangChain tools.
     
@@ -136,7 +135,7 @@ async def discover_mcp_tools(mcp_client: MCPBaseClient) -> List[MCPToolWrapper]:
     return tools
 
 
-def create_mcp_tool_from_client(mcp_client: MCPBaseClient) -> List[MCPToolWrapper]:
+def create_mcp_tool_from_client(mcp_client: MCPClient) -> List[MCPToolWrapper]:
     """
     Synchronous helper function to create MCP tools from a client.
     
@@ -166,10 +165,10 @@ async def example_usage():
     Example of how to use the MCP tool wrapper with LangChain
     """
     # Import here to avoid circular imports
-    from mcp_weather_client import MCPWeatherClient
+    from mcp_client import MCPClient
     
     # Create and connect MCP client
-    client = MCPWeatherClient()
+    client = MCPClient()
     await client.connect()
     
     try:

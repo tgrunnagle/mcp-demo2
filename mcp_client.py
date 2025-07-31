@@ -11,12 +11,10 @@ from mcp import ClientSession
 from mcp.client.sse import sse_client
 from mcp.types import CallToolRequest, ListToolsRequest, GetPromptRequest, ListPromptsRequest
 
-from mcp_base_client import MCPBaseClient
-
 # Configure logging
 logger = logging.getLogger(__name__)
 
-class MCPWeatherClient(MCPBaseClient):
+class MCPClient():
     """Example MCP Client that connects to the weather server via SSE"""
     
     def __init__(self, server_url: str = "http://localhost:8000"):

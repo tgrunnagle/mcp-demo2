@@ -17,7 +17,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.tools import BaseTool
 
-from mcp_weather_client import MCPWeatherClient
+from mcp_client import MCPClient
 from mcp_tool_wrapper import discover_mcp_tools
 
 # Configure logging
@@ -79,7 +79,7 @@ class MCPLangChainHost:
             
             # Initialize MCP client
             logger.info(f"Connecting to MCP server: {self.mcp_server_url}")
-            self.mcp_client = MCPWeatherClient(self.mcp_server_url)
+            self.mcp_client = MCPClient(self.mcp_server_url)
             
             if not await self.mcp_client.connect():
                 logger.error("Failed to connect to MCP server")
