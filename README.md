@@ -110,10 +110,11 @@ python mcp_weather_client.py interactive
 The example demonstrates:
 
 1. **MCP Server**: Uses the `mcp` library to create a server that exposes weather-related tools and prompts
-2. **SSE Transport**: FastAPI endpoint that provides Server-Sent Events for real-time MCP communication
+2. **SSE Transport**: FastMCP endpoint that provides Server-Sent Events for real-time MCP communication
 3. **MCP Client**: Uses the `mcp` library to connect to the server via SSE and interact with tools/prompts
 4. **Error Handling**: Proper error handling and logging throughout
 5. **Type Safety**: Uses Pydantic models and proper typing for robust communication
+6. **LangChain Integration**: MCPToolWrapper for using MCP tools with LangChain agents in the Host
 
 ## Features
 

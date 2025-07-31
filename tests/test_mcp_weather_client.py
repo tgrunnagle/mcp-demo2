@@ -22,7 +22,7 @@ from typing import List, Dict, Any
 # Add the parent directory to the path so we can import our modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from mcp_weather_client import MCPWeatherClient
+from mcp_client import MCPClient
 
 
 class TestMCPWeatherClient:
@@ -31,7 +31,7 @@ class TestMCPWeatherClient:
     @pytest.fixture
     async def client(self):
         """Create and connect a client for testing"""
-        client = MCPWeatherClient("http://localhost:8000")
+        client = MCPClient("http://localhost:8000")
         connected = await client.connect()
         if not connected:
             pytest.skip("Could not connect to MCP server at http://localhost:8000. Make sure the server is running.")
@@ -44,7 +44,7 @@ class TestMCPWeatherClient:
     @pytest.mark.asyncio
     async def test_connection(self):
         """Test that we can connect to the MCP server"""
-        client = MCPWeatherClient("http://localhost:8000")
+        client = MCPClient("http://localhost:8000")
         
         # Test connection
         connected = await client.connect()

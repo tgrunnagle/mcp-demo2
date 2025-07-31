@@ -12,7 +12,7 @@ from typing import Dict, Any, List
 
 # Import the modules we're testing
 from mcp_tool_wrapper import MCPToolWrapper, discover_mcp_tools, create_mcp_tool_from_client
-from mcp_weather_client import MCPWeatherClient
+from mcp_client import MCPClient
 
 
 class TestMCPToolWrapper:
@@ -21,7 +21,7 @@ class TestMCPToolWrapper:
     @pytest.fixture
     async def real_client(self):
         """Create a real MCP client for testing (requires server)"""
-        client = MCPWeatherClient("http://localhost:8000")
+        client = MCPClient("http://localhost:8000")
         connected = await client.connect()
         if not connected:
             pytest.skip("Could not connect to MCP server at http://localhost:8000. Make sure the server is running.")
@@ -109,7 +109,7 @@ class TestToolDiscovery:
     @pytest.fixture
     async def real_client(self):
         """Create a real MCP client for testing (requires server)"""
-        client = MCPWeatherClient("http://localhost:8000")
+        client = MCPClient("http://localhost:8000")
         connected = await client.connect()
         if not connected:
             pytest.skip("Could not connect to MCP server at http://localhost:8000. Make sure the server is running.")
@@ -157,7 +157,7 @@ class TestIntegrationScenarios:
     @pytest.fixture
     async def real_client(self):
         """Create a real MCP client for testing (requires server)"""
-        client = MCPWeatherClient("http://localhost:8000")
+        client = MCPClient("http://localhost:8000")
         connected = await client.connect()
         if not connected:
             pytest.skip("Could not connect to MCP server at http://localhost:8000. Make sure the server is running.")
