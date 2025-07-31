@@ -7,12 +7,14 @@ This module provides a wrapper that allows MCP tools to be used as LangChain too
 import asyncio
 import json
 from typing import Any, Dict, List, Optional, Type
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model
 from langchain_core.tools import BaseTool
 from langchain_core.callbacks import CallbackManagerForToolRun
-
+from typing import override
 from mcp_base_client import MCPBaseClient
+import logging
 
+logger = logging.getLogger(__name__)
 
 class MCPToolWrapper(BaseTool):
     """LangChain tool wrapper for MCP tools"""
@@ -20,39 +22,53 @@ class MCPToolWrapper(BaseTool):
     name: str = Field(..., description="Name of the MCP tool")
     description: str = Field(..., description="Description of the MCP tool")
     mcp_client: MCPBaseClient = Field(..., description="MCP client instance")
-    tool_name: str = Field(..., description="Name of the tool on the MCP server")
-    input_schema: Dict[str, Any] = Field(..., description="Input schema for the tool")
+
+    def __init__(self, tool_config: Dict[str, Any], **kwargs):
+        args_schema = self._get_tool_base_model(tool_config)
+        super().__init__(args_schema=args_schema, **kwargs)
+    
+    def _get_tool_base_model(self, tool_config: Dict[str, Any]) -> Type[BaseModel]:
+        """Create a Pydantic input model from the input schema."""
+        fields = {}
+        
+        type_mapping = {
+            'string': str,
+            'str': str,
+            'integer': int,
+            'int': int,
+            'number': float,
+            'float': float,
+            'boolean': bool,
+            'bool': bool,
+            'list': list,
+            'array': list,
+            'dict': dict,
+            'object': dict,
+            'any': Any,
+        }
+
+        for field_name, field_config in tool_config['inputSchema']['properties'].items():
+            field_type = type_mapping.get(field_config.get('type', 'str'), str)
+            default = field_config.get('default', ...)
+            description = field_config.get('description', 'No description provided')
+            
+            if default == ...:
+                fields[field_name] = (field_type, Field(description=description))
+            else:
+                fields[field_name] = (field_type, Field(default=default, description=description))
+        
+        return create_model(tool_config['name'], **fields)
     
     class Config:
         arbitrary_types_allowed = True
-    
+
+    @override
     def _run(
         self,
-        query: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
-        **kwargs: Any,
+        **kwargs,
     ) -> str:
         """Synchronous wrapper for the async MCP tool call"""
-        # Parse the input based on the tool's schema
-        try:
-            # If query is a JSON string, parse it
-            if query.strip().startswith('{'):
-                arguments = json.loads(query)
-            else:
-                # For simple tools like weather, assume the query is the city parameter
-                # This is a simplification - in a real implementation you'd want to
-                # parse the schema more carefully
-                if 'city' in str(self.input_schema):
-                    arguments = {'city': query}
-                else:
-                    arguments = {'query': query}
-        except json.JSONDecodeError:
-            # Fallback: treat as simple string input
-            if 'city' in str(self.input_schema):
-                arguments = {'city': query}
-            else:
-                arguments = {'query': query}
-        
         # Run the async call in a new event loop or existing one
         try:
             loop = asyncio.get_event_loop()
@@ -70,38 +86,23 @@ class MCPToolWrapper(BaseTool):
             # No event loop running, create a new one
             return asyncio.run(self._async_run(arguments))
     
-    async def _async_run(self, arguments: Dict[str, Any]) -> str:
-        """Async implementation of the tool call"""
-        try:
-            result = await self.mcp_client.call_tool(self.tool_name, arguments)
-            return result
-        except Exception as e:
-            return f"Error calling MCP tool {self.tool_name}: {str(e)}"
-    
+    @override
     async def _arun(
         self,
-        query: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
-        **kwargs: Any,
+        **kwargs,
     ) -> str:
         """Async version of the tool call"""
         # Parse the input based on the tool's schema
-        try:
-            if query.strip().startswith('{'):
-                arguments = json.loads(query)
-            else:
-                if 'city' in str(self.input_schema):
-                    arguments = {'city': query}
-                else:
-                    arguments = {'query': query}
-        except json.JSONDecodeError:
-            if 'city' in str(self.input_schema):
-                arguments = {'city': query}
-            else:
-                arguments = {'query': query}
-        
-        return await self._async_run(arguments)
+        return await self._async_run(**kwargs)
 
+    async def _async_run(self, **kwargs) -> str:
+        """Async implementation of the tool call"""
+        try:
+            result = await self.mcp_client.call_tool(self.name, **kwargs)
+            return result
+        except Exception as e:
+            return f"Error calling MCP tool {self.name}: {str(e)}"
 
 async def discover_mcp_tools(mcp_client: MCPBaseClient) -> List[MCPToolWrapper]:
     """
@@ -122,16 +123,15 @@ async def discover_mcp_tools(mcp_client: MCPBaseClient) -> List[MCPToolWrapper]:
         for tool_info in available_tools:
             # Create a LangChain tool wrapper for each MCP tool
             wrapper = MCPToolWrapper(
+                tool_config=tool_info,
                 name=tool_info['name'],
                 description=tool_info['description'],
                 mcp_client=mcp_client,
-                tool_name=tool_info['name'],
-                input_schema=tool_info['inputSchema']
             )
             tools.append(wrapper)
             
     except Exception as e:
-        print(f"Error discovering MCP tools: {e}")
+       logger.exception("Error discovering MCP tools")
         
     return tools
 
@@ -176,15 +176,15 @@ async def example_usage():
         # Discover available tools
         tools = await discover_mcp_tools(client)
         
-        print(f"Discovered {len(tools)} MCP tools:")
+        logger.info(f"Discovered {len(tools)} MCP tools:")
         for tool in tools:
-            print(f"- {tool.name}: {tool.description}")
+            logger.info(f"- {tool.name}: {tool.description}")
         
         # Example: Use a tool
         if tools:
             weather_tool = tools[0]  # Assuming first tool is weather
             result = await weather_tool._arun("San Francisco")
-            print(f"Weather result: {result}")
+            logger.info(f"Weather result: {result}")
             
     finally:
         await client.disconnect()

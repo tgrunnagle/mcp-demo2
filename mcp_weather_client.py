@@ -14,7 +14,6 @@ from mcp.types import CallToolRequest, ListToolsRequest, GetPromptRequest, ListP
 from mcp_base_client import MCPBaseClient
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class MCPWeatherClient(MCPBaseClient):
@@ -75,10 +74,10 @@ class MCPWeatherClient(MCPBaseClient):
             logger.error(f"Error listing tools: {e}")
             return []
     
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> str:
+    async def call_tool(self, name: str, **kwargs) -> str:
         """Call a tool on the server"""
         try:
-            result = await self.session.call_tool(name, arguments)
+            result = await self.session.call_tool(name, kwargs)
             
             # Extract text content from the result
             if result.content:

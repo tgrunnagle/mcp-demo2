@@ -37,13 +37,22 @@ class TestMCPToolWrapper:
             name="get_weather_tool",
             description="Get current weather for a city",
             mcp_client=real_client,
-            tool_name="get_weather_tool",
             input_schema={
-                "type": "object",
-                "properties": {
-                    "city": {"type": "string", "description": "City name"}
-                },
-                "required": ["city"]
+                "name": "get_weather_tool",
+                "description": "Get current weather for a city",
+                "inputSchema": {
+                    "properties": {
+                        "city": {
+                            "title": "City",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "city"
+                    ],
+                    "title": "get_weather_toolArguments",
+                    "type": "object"
+                }
             }
         )
     
@@ -54,14 +63,29 @@ class TestMCPToolWrapper:
             name="test_tool",
             description="Test tool",
             mcp_client=real_client,
-            tool_name="get_weather_tool",  # Use actual tool name
-            input_schema={"type": "object", "properties": {"city": {"type": "string"}}}
+            input_schema={
+                "name": "get_weather_tool",
+                "description": "Get current weather for a city",
+                "inputSchema": {
+                    "properties": {
+                        "city": {
+                            "title": "City",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "city"
+                    ],
+                    "title": "get_weather_toolArguments",
+                    "type": "object"
+                }
+            }
         )
         
         assert wrapper.name == "test_tool"
         assert wrapper.description == "Test tool"
-        assert wrapper.tool_name == "get_weather_tool"
         assert wrapper.mcp_client == real_client
+        assert isinstance(wrapper.arg_schema, Type[BaseModel])
     
     @pytest.mark.asyncio
     async def test_run_with_json_input(self, weather_tool_wrapper):
@@ -165,8 +189,23 @@ class TestIntegrationScenarios:
             name="test_tool",
             description="Test tool",
             mcp_client=real_client,
-            tool_name="get_weather_tool",
-            input_schema={"type": "object", "properties": {"city": {"type": "string"}}}
+            input_schema={
+                "name": "get_weather_tool",
+                "description": "Get current weather for a city",
+                "inputSchema": {
+                    "properties": {
+                        "city": {
+                            "title": "City",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "city"
+                    ],
+                    "title": "get_weather_toolArguments",
+                    "type": "object"
+                }
+            }
         )
         
         # Check that it has the required LangChain BaseTool attributes
@@ -178,4 +217,5 @@ class TestIntegrationScenarios:
         # Check that name and description are strings
         assert isinstance(wrapper.name, str)
         assert isinstance(wrapper.description, str)
+        assert isinstance(wrapper.arg_schema, Type[BaseModel])
 
