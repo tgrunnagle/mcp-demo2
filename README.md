@@ -44,14 +44,7 @@ python mcp_weather_server.py
 
 2. **Run the test suite** (in another terminal):
 ```bash
-# Basic test suite (recommended)
 python run_tests.py
-
-# Full pytest suite
-python run_tests.py --pytest
-
-# Or run pytest directly
-pytest tests/ -v --asyncio-mode=auto
 ```
 
 **Test Coverage:**
@@ -75,52 +68,12 @@ ollama run llama3.2:3b
 python mcp_host.py
 ```
 
-## Running the Client
-
-1. In another terminal (with the same virtual environment), run the demo client:
-```bash
-python mcp_weather_client.py
-```
-
-2. Or run the interactive client:
-```bash
-python mcp_weather_client.py interactive
-```
-
 ## API Endpoints
 
 ### Server Endpoints
-- `GET /` - Server information and available endpoints
-- `GET /health` - Health check with server status
 - `GET /sse` - Server-Sent Events endpoint for MCP communication
 
 ### MCP Tools
 - `get_weather(city)` - Get current weather for a city
 - `list_cities()` - List all available cities
 - `update_weather(city, temp, humidity, condition)` - Update weather data
-
-### MCP Prompts
-- `weather_report(city)` - Generate weather report prompt for a city
-- `weather_summary()` - Generate summary prompt for all weather data
-
-```
-
-## Architecture
-
-The example demonstrates:
-
-1. **MCP Server**: Uses the `mcp` library to create a server that exposes weather-related tools and prompts
-2. **SSE Transport**: FastMCP endpoint that provides Server-Sent Events for real-time MCP communication
-3. **MCP Client**: Uses the `mcp` library to connect to the server via SSE and interact with tools/prompts
-4. **Error Handling**: Proper error handling and logging throughout
-5. **Type Safety**: Uses Pydantic models and proper typing for robust communication
-6. **LangChain Integration**: MCPToolWrapper for using MCP tools with LangChain agents in the Host
-
-## Features
-
-- **Tools**: Callable functions that perform actions (get weather, update data, etc.)
-- **Prompts**: Template generators for creating structured prompts
-- **Real-time Communication**: SSE-based transport for efficient client-server communication
-- **Health Monitoring**: Built-in health checks and logging
-- **CORS Support**: Cross-origin resource sharing for web clients
-- **Interactive Mode**: Command-line interface for testing
